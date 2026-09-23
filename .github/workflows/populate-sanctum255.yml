@@ -297,13 +297,17 @@ jobs:
 
           missing=0
           while IFS= read -r file; do
-            if [ ! -f "$APP_ROOT/$file" ]; then
+            source_file="$APP_ROOT/$file"
+            if [ ! -f "$source_file" ] && [ -f "/tmp/sanctum-source/$file" ]; then
+              source_file="/tmp/sanctum-source/$file"
+            fi
+            if [ ! -f "$source_file" ]; then
               echo "Missing expected file: $file"
               missing=$((missing+1))
               continue
             fi
             mkdir -p "/tmp/sanctum-selected/$(dirname "$file")"
-            cp -p "$APP_ROOT/$file" "/tmp/sanctum-selected/$file"
+            cp -p "$source_file" "/tmp/sanctum-selected/$file"
           done < /tmp/sanctum-paths.txt
           echo "Missing count: $missing"
           test "$missing" -eq 0
