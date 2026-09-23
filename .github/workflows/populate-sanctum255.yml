@@ -25,62 +25,323 @@ jobs:
           set -euo pipefail
           git clone --depth 1 https://github.com/xxbarbiequinnxx-dev/sanctum2.5.2.2.git /tmp/sanctum-source
           test -s /tmp/sanctum-source/Sanctum-vercel-upload.zip
-          rm -rf /tmp/sanctum-unpacked
-          mkdir -p /tmp/sanctum-unpacked
+          rm -rf /tmp/sanctum-unpacked /tmp/sanctum-selected
+          mkdir -p /tmp/sanctum-unpacked /tmp/sanctum-selected
           unzip -q /tmp/sanctum-source/Sanctum-vercel-upload.zip -d /tmp/sanctum-unpacked
           APP_ROOT="$(dirname "$(find /tmp/sanctum-unpacked -maxdepth 3 -type f -name package.json | head -n 1)")"
           test -f "$APP_ROOT/package.json"
           echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
 
-      - name: Verify against uploaded All-Sanctum-Files archive
+      - name: Select exact uploaded archive paths
         shell: bash
         run: |
           set -euo pipefail
-          cd "$APP_ROOT"
+          cat > /tmp/sanctum-paths.txt <<'PATHS'
+.github/workflows/verify-vercel-web.yml
+.gitignore
+.grok/app-env.json
+.grok/favicon-16.png
+.grok/favicon-32.png
+.grok/favicon-preview.html
+.grok/references/browser-qa.md
+.grok/references/data-and-auth.md
+.grok/references/deploy-target.md
+.grok/references/generated-art.md
+.grok/references/hibernate-revive.md
+.grok/references/scaffold.md
+.grok/status
+.node_modules.lock
+.prettierrc
+DEPLOY-TO-VERCEL.md
+README-UPLOAD.txt
+README-VERCEL.txt
+eslint.config.mjs
+migrations/0001_auth.sql
+migrations/0002_schema.sql
+migrations/0003_profile_messages.sql
+migrations/0004_assignment_categories.sql
+migrations/0005_points_journal_toys.sql
+migrations/0006_companion.sql
+migrations/0007_companion_shape.sql
+migrations/0008_house_location.sql
+migrations/0009_category_archive.sql
+migrations/0010_location_stay.sql
+migrations/0011_house_history.sql
+migrations/0012_sort_media.sql
+migrations/0013_presence.sql
+migrations/0014_bond_sync.sql
+migrations/0015_experience.sql
+migrations/0016_setup_playbook.sql
+migrations/0017_last_partner.sql
+migrations/0018_partnerships.sql
+migrations/0019_companion_media.sql
+migrations/0020_companion_nudge.sql
+migrations/0021_profile_kinks.sql
+migrations/0022_companion_memory.sql
+migrations/0023_companion_neediness.sql
+migrations/auth/0001_auth.sql
+package-lock.json
+package.json
+public/AppIcon.icns
+public/__grok/icon-180.png
+public/__grok/install/assets/homescreen/glass-puzzle.svg
+public/__grok/install/assets/homescreen/glass-share.svg
+public/__grok/install/assets/homescreen/logo-grok.svg
+public/__grok/install/assets/homescreen/ob-ipad.png
+public/__grok/install/assets/homescreen/ob-phone.png
+public/__grok/install/assets/homescreen/plus.svg
+public/__grok/install/styles.css
+public/favicon-32.png
+public/favicon.svg
+public/icon-1024.png
+public/icon-180.png
+public/icon-192.png
+public/icon-512.png
+public/icon-rounded-512.png
+public/icon.svg
+public/manifest.webmanifest
+public/og.jpg
+public/vesper.jpg
+public/x-banner.jpg
+scripts/app-env-plugin.mjs
+scripts/brand-check.mjs
+scripts/brand-check.test.mjs
+scripts/browser-guard.mjs
+scripts/browser-smoke-verdict.mjs
+scripts/browser-smoke-verdict.test.mjs
+scripts/browser-smoke.mjs
+scripts/check-auth-invariant.mjs
+scripts/check-auth-invariant.test.mjs
+scripts/gen_bdsm_quiz.py
+scripts/grok-pwa-plugin.mjs
+scripts/grok-pwa-plugin.test.mjs
+scripts/grok-pwa-shared.d.mts
+scripts/grok-pwa-shared.mjs
+scripts/install-page.html
+scripts/make-app-icon.py
+scripts/media-review.test.mjs
+scripts/migrate.mjs
+scripts/migration-plan.mjs
+scripts/migration-plan.test.mjs
+scripts/preview-thumbnail.mjs
+scripts/preview.mjs
+scripts/preview.test.mjs
+scripts/sign-out-plan.mjs
+scripts/sign-out-plan.test.mjs
+scripts/with-app-env.mjs
+scripts/with-app-env.test.mjs
+scripts/write-atomic.mjs
+scripts/write-atomic.test.mjs
+server/middleware/grok-pwa.ts
+server/virtual-grok-og-identity.d.ts
+src/components/account-menu.tsx
+src/components/app-open-beacon.tsx
+src/components/app-shell.tsx
+src/components/brand-mark.tsx
+src/components/challenges-view.tsx
+src/components/chance-wheel.tsx
+src/components/companion-panel.tsx
+src/components/discovery-quiz.tsx
+src/components/entry-form.tsx
+src/components/game-deck.tsx
+src/components/games-play.tsx
+src/components/header-timer.tsx
+src/components/home-view.tsx
+src/components/house-calendar.tsx
+src/components/house-view.tsx
+src/components/idea-bank.tsx
+src/components/install-apps.tsx
+src/components/journal-view.tsx
+src/components/kind-page.tsx
+src/components/kink-field.tsx
+src/components/library-reader.tsx
+src/components/location-beacon.tsx
+src/components/login-view.tsx
+src/components/messages-panel.tsx
+src/components/neediness-field.tsx
+src/components/onboarding.tsx
+src/components/pdf-field.tsx
+src/components/photo-field.tsx
+src/components/points-board.tsx
+src/components/preview-host-bridge.tsx
+src/components/profile-view.tsx
+src/components/rich-text.tsx
+src/components/role-style-field.tsx
+src/components/spawn-check.tsx
+src/components/talk-view.tsx
+src/components/toy-control.tsx
+src/components/ui/badge.tsx
+src/components/ui/button.tsx
+src/components/ui/dialog.tsx
+src/components/ui/input.tsx
+src/components/ui/label.tsx
+src/components/ui/select.tsx
+src/components/ui/textarea.tsx
+src/components/vacation-control.tsx
+src/lib/api.ts
+src/lib/app-data/app-data.test.ts
+src/lib/app-data/client.server.ts
+src/lib/app-data/errors.ts
+src/lib/app-data/index.ts
+src/lib/app-data/login.ts
+src/lib/app-data/readiness-schedule.test.ts
+src/lib/app-data/readiness-schedule.ts
+src/lib/app-data/readiness.ts
+src/lib/app-data/server-only.ts
+src/lib/app-data/types.ts
+src/lib/app-data/use-connector-readiness.ts
+src/lib/auth/client.ts
+src/lib/auth/email-password.ts
+src/lib/auth/gate-identity.server.ts
+src/lib/auth/gate-identity.test.ts
+src/lib/auth/gate-session-marker.ts
+src/lib/auth/gate-session.server.ts
+src/lib/auth/gates.tsx
+src/lib/auth/isolation.server.ts
+src/lib/auth/middleware.ts
+src/lib/auth/pglite-dialect.ts
+src/lib/auth/popup.server.ts
+src/lib/auth/preview.ts
+src/lib/auth/provider.tsx
+src/lib/auth/providers.ts
+src/lib/auth/server.ts
+src/lib/auth/sign-in-gate.test.ts
+src/lib/auth/sign-in-gate.ts
+src/lib/auth/use-current-user.ts
+src/lib/auth/verify.server.ts
+src/lib/auto-save.tsx
+src/lib/bdsm-quiz-bank.ts
+src/lib/categories.ts
+src/lib/challenges.ts
+src/lib/companion-live.ts
+src/lib/companion-world.ts
+src/lib/companion.ts
+src/lib/countdown.ts
+src/lib/db.ts
+src/lib/discovery-quizzes.ts
+src/lib/env.server.ts
+src/lib/error-component.tsx
+src/lib/experience.ts
+src/lib/format.ts
+src/lib/game-deck.ts
+src/lib/history.ts
+src/lib/house.ts
+src/lib/idea-bank.ts
+src/lib/kinds.ts
+src/lib/kinks.ts
+src/lib/live-sync.ts
+src/lib/location.ts
+src/lib/mac-app-zip.ts
+src/lib/me-sync.ts
+src/lib/media-access.ts
+src/lib/multiplayer/index.ts
+src/lib/multiplayer/p2p.ts
+src/lib/nav.ts
+src/lib/note-links.ts
+src/lib/notes-library.ts
+src/lib/notify.ts
+src/lib/og/site.json
+src/lib/pdf.ts
+src/lib/photo.ts
+src/lib/playbook-library.ts
+src/lib/preview-embedder-origin.ts
+src/lib/preview-host-bridge.ts
+src/lib/reminders.ts
+src/lib/reset-mail.ts
+src/lib/rich-text.ts
+src/lib/role-styles.ts
+src/lib/sort.ts
+src/lib/stakes.ts
+src/lib/talk-content.ts
+src/lib/talk-notes.ts
+src/lib/toy-ble.ts
+src/lib/types.ts
+src/lib/utils.ts
+src/lib/video.ts
+src/lib/web-bluetooth.d.ts
+src/lib/weekly-prompts.ts
+src/lib/weekly-solo.ts
+src/lib/weekly-talk.ts
+src/routeTree.gen.ts
+src/router.tsx
+src/routes/__root.tsx
+src/routes/api/auth/$.ts
+src/routes/catalog.tsx
+src/routes/challenges.tsx
+src/routes/games.tsx
+src/routes/habits.tsx
+src/routes/house.tsx
+src/routes/index.tsx
+src/routes/journal.tsx
+src/routes/login.tsx
+src/routes/notes.tsx
+src/routes/playbook.tsx
+src/routes/profile.tsx
+src/routes/punishments.tsx
+src/routes/rabbits.tsx
+src/routes/reset-password.tsx
+src/routes/rewards.tsx
+src/routes/roleplay.tsx
+src/routes/scenes.tsx
+src/routes/talk.tsx
+src/routes/tasks.tsx
+src/routes/toys.tsx
+src/routes/training.tsx
+src/routes/wishlist.tsx
+src/styles.css
+startup.sh
+tsconfig.json
+vercel.json
+vite.config.ts
+PATHS
 
-          # The uploaded archive contains 257 files including .env.production.
-          # We intentionally do not publish .env.production to this public repo.
-          COUNT="$(find . -type f ! -path './.env.production' | wc -l | tr -d ' ')"
-          BYTES="$(find . -type f ! -path './.env.production' -printf '%s\n' | awk '{s+=$1} END {print s}')"
-          echo "non-env files=$COUNT bytes=$BYTES"
-          test "$COUNT" = "256"
-          test "$BYTES" = "4342207"
+          while IFS= read -r file; do
+            test -f "$APP_ROOT/$file" || { echo "Missing expected file: $file"; exit 1; }
+            mkdir -p "/tmp/sanctum-selected/$(dirname "$file")"
+            cp -p "$APP_ROOT/$file" "/tmp/sanctum-selected/$file"
+          done < /tmp/sanctum-paths.txt
 
-          check() {
-            expected="$1"
-            file="$2"
-            actual="$(sha256sum "$file" | awk '{print $1}')"
-            echo "$file $actual"
-            test "$actual" = "$expected"
-          }
+      - name: Verify exact archive digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib
 
-          check 6d87eac3c75d681e74cfd3ce9a1844eb039496c242e2d5733dee58de1f8c9df5 package.json
-          check 5ca9d86a3c6f91b580d434297f283b70850bb740e7b813b6a63ab0ca9fb24615 package-lock.json
-          check a2ea499279dce89eb2c701023dc5e1116d237057636772a3fb824d053ab3d745 vercel.json
-          check 64cc5a8df877256fabc257158386a11778f6cbebf85b1b72d461df4d24ef9675 DEPLOY-TO-VERCEL.md
-          check fbb73f1cc91cba693f1c9400b35ac4a851e055278e6b027313097675e9d846c7 src/lib/db.ts
-          check 796a421d36c0f826f8793c7f15f0b4fdcd5719cf1e3fc61614ee26220d7c5a46 src/lib/auth/server.ts
-          check b6321163be789e2f4cdbf5a2655cbc298c7378c3f1caacb2660c624e76a9fc82 src/components/login-view.tsx
-          check a85e03e6be73b50d776c9e32350917b162aab5f08c0ad46a58d3d15ad2fed4b2 src/lib/pdf.ts
-          check ca05523c267fbad0f7675870bb58135d3b55daa6913f07611b5847df024ee884 src/components/pdf-field.tsx
-          check 37960fa3579178f2250ec31c1343996f6396c1dc5b5b18f785db393f948ea039 public/vesper.jpg
-          check 9c79b90a4e548ce2b3d48fe0aec7eba1d3c6a79cdacd39deec54768d944afe27 .github/workflows/verify-vercel-web.yml
+          root=Path("/tmp/sanctum-selected")
+          files=sorted(p for p in root.rglob("*") if p.is_file())
+          h=hashlib.sha256()
+          total=0
+          for p in files:
+              rel=p.relative_to(root).as_posix()
+              data=p.read_bytes()
+              total += len(data)
+              digest=hashlib.sha256(data).hexdigest()
+              h.update(rel.encode()+b"\0"+str(len(data)).encode()+b"\0"+digest.encode()+b"\n")
+
+          print("files",len(files))
+          print("bytes",total)
+          print("tree_digest",h.hexdigest())
+          assert len(files)==256
+          assert total==4342207
+          assert h.hexdigest()=="8cb493d4b2e87d19e81d3e6fe969b6c6f630850e09719a9786db23a5a12b1031"
+          PY
 
       - name: Populate repository
         shell: bash
         run: |
           set -euo pipefail
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -a "$APP_ROOT"/. .
-          rm -f .env.production
+          cp -a /tmp/sanctum-selected/. .
 
-          # Never publish deployment secrets or Android signing material.
-          find . -type f \( -name '*.keystore' -o -name '*.jks' \) -delete
+          # Environment values remain in Vercel, not this public GitHub repo.
           rm -f .env .env.local .env.production .env.development .env.preview
+          find . -type f \( -name '*.keystore' -o -name '*.jks' \) -delete
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git status --short
-          git commit -m "Populate Sanctum 2.5.5 from verified source"
+          git commit -m "Populate Sanctum 2.5.5 from verified All-Sanctum-Files source"
           git push origin HEAD:main
