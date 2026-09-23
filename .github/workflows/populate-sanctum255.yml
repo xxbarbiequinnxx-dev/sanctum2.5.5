@@ -391,8 +391,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cp .github/workflows/populate-sanctum255.yml /tmp/populate-sanctum255.yml
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -a /tmp/sanctum-selected/. .
+
+          # GitHub Actions' own token cannot change workflow files.
+          # Keep this bootstrap workflow for the push; the ChatGPT GitHub
+          # connection replaces it with the real verification workflow after.
+          rm -f .github/workflows/verify-vercel-web.yml
+          mkdir -p .github/workflows
+          cp /tmp/populate-sanctum255.yml .github/workflows/populate-sanctum255.yml
 
           # Environment values remain in Vercel, not this public GitHub repo.
           rm -f .env .env.local .env.production .env.development .env.preview
