@@ -18,12 +18,45 @@ import { dirname, join } from "node:path";
 import pg from "pg";
 import { pendingMigrations } from "./migration-plan.mjs";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL?.trim();
 if (!databaseUrl) {
   console.log(
     "[migrate] DATABASE_URL not set — skipping (the PGLite fallback migrates itself).",
   );
   process.exit(0);
+}
+
+let parsedDatabaseUrl;
+try {
+  parsedDatabaseUrl = new URL(databaseUrl);
+} catch {
+  console.error(
+    "[migrate] DATABASE_URL is not a valid PostgreSQL connection URL. " +
+      "Expected: postgresql://USERNAME:PASSWORD@HOSTNAME/DATABASE?sslmode=require",
+  );
+  process.exit(1);
+}
+
+if (!["postgres:", "postgresql:"].includes(parsedDatabaseUrl.protocol)) {
+  console.error(
+    "[migrate] DATABASE_URL has unsupported protocol \"" +
+      parsedDatabaseUrl.protocol +
+      "\". Use postgres:// or postgresql://.",
+  );
+  process.exit(1);
+}
+
+const badHosts = new Set(["base", "host", "hostname", "localhost", "127.0.0.1"]);
+if (badHosts.has(parsedDatabaseUrl.hostname.toLowerCase()) && process.env.VERCEL) {
+  console.error(
+    "[migrate] DATABASE_URL hostname is \"" +
+      parsedDatabaseUrl.hostname +
+      "\", which is not a usable hosted database address on Vercel.",
+  );
+  console.error(
+    "[migrate] In Vercel -> Project -> Settings -> Environment Variables, replace DATABASE_URL with the complete PostgreSQL/Neon connection string.",
+  );
+  process.exit(1);
 }
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "migrations");
