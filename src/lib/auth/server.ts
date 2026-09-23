@@ -95,6 +95,11 @@ const explicitBaseURL = env("BETTER_AUTH_URL");
 // Explicit `string[]` (not a readonly tuple) — Better Auth's DynamicBaseURLConfig
 // requires a mutable `allowedHosts: string[]`.
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
+const BOUTIQUE_HOSTS: string[] = ["www.sanctum.boutique", "sanctum.boutique"];
+const BOUTIQUE_ORIGINS: string[] = [
+  "https://www.sanctum.boutique",
+  "https://sanctum.boutique",
+];
 // Local `npm run dev` (port 8080 contract). Browsers may send Origin as any of
 // these for the same server — trusting only `localhost` rejects `127.0.0.1` and
 // breaks email/password with "Invalid origin".
@@ -104,31 +109,25 @@ const LOCAL_DEV_ORIGINS: string[] = [
   "http://[::1]:8080",
 ];
 const baseURL = explicitBaseURL ?? {
-  // Include loopback hosts so dynamic baseURL resolves for local email/password
-  // (not only the preview wildcard).
-  allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
-  // `auto` → trust both http:// and https:// expansions of allowedHosts
-  // (preview is https; local dev is http).
+  allowedHosts: [
+    ...previewAllowedHosts,
+    ...BOUTIQUE_HOSTS,
+    "localhost",
+    "127.0.0.1",
+    "[::1]",
+  ],
   protocol: "auto" as const,
-  fallback: "http://localhost:8080",
+  fallback: "https://www.sanctum.boutique",
 };
 
 // Origins Better Auth accepts on credentialed POSTs (sign-up/sign-in, etc.).
 // Missing entries here surface as FORBIDDEN "Invalid origin".
-const PRODUCTION_ORIGINS = [
-  "https://sanctum.boutique",
-  "https://www.sanctum.boutique",
-];
 const trustedOrigins: string[] = [
-  ...PRODUCTION_ORIGINS,
+  ...BOUTIQUE_ORIGINS,
   ...(explicitBaseURL ? [explicitBaseURL] : []),
   ...LOCAL_DEV_ORIGINS,
-  ...(explicitBaseURL
-    ? []
-    : [
-        ...previewAllowedHosts,
-        ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
-      ]),
+  ...previewAllowedHosts,
+  ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
 ];
 
 const databaseUrl = env("DATABASE_URL");
