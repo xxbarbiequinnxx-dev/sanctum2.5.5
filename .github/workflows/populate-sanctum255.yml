@@ -324,13 +324,16 @@ jobs:
           files=sorted(p for p in root.rglob("*") if p.is_file())
           h=hashlib.sha256()
           total=0
+          manifest=[]
           for p in files:
               rel=p.relative_to(root).as_posix()
               data=p.read_bytes()
               total += len(data)
               digest=hashlib.sha256(data).hexdigest()
+              manifest.append(f"{digest}  {rel}")
               h.update(rel.encode()+b"\0"+str(len(data)).encode()+b"\0"+digest.encode()+b"\n")
 
+          Path("source-manifest.txt").write_text("\n".join(manifest)+"\n")
           print("files",len(files))
           print("bytes",total)
           print("tree_digest",h.hexdigest())
@@ -338,6 +341,15 @@ jobs:
           assert total==4342207
           assert h.hexdigest()=="8cb493d4b2e87d19e81d3e6fe969b6c6f630850e09719a9786db23a5a12b1031"
           PY
+
+      - name: Upload source checksum manifest
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sanctum255-source-manifest
+          path: source-manifest.txt
+          if-no-files-found: ignore
+          retention-days: 3
 
       - name: Populate repository
         shell: bash
