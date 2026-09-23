@@ -295,11 +295,18 @@ jobs:
           vite.config.ts
           PATHS
 
+          missing=0
           while IFS= read -r file; do
-            test -f "$APP_ROOT/$file" || { echo "Missing expected file: $file"; exit 1; }
+            if [ ! -f "$APP_ROOT/$file" ]; then
+              echo "Missing expected file: $file"
+              missing=$((missing+1))
+              continue
+            fi
             mkdir -p "/tmp/sanctum-selected/$(dirname "$file")"
             cp -p "$APP_ROOT/$file" "/tmp/sanctum-selected/$file"
           done < /tmp/sanctum-paths.txt
+          echo "Missing count: $missing"
+          test "$missing" -eq 0
 
       - name: Verify exact archive digest
         shell: bash
