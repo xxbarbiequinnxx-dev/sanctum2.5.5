@@ -312,6 +312,45 @@ jobs:
           echo "Missing count: $missing"
           test "$missing" -eq 0
 
+          override() {
+            target="$1"
+            source="/tmp/sanctum-source/$(basename "$target")"
+            test -f "$source" || { echo "Missing override source: $source"; exit 1; }
+            cp -p "$source" "/tmp/sanctum-selected/$target"
+          }
+
+          # These paths are newer in the uploaded All-Sanctum-Files archive.
+          # The public repo's flattened copies match those newer versions.
+          override src/components/app-shell.tsx
+          override src/components/companion-panel.tsx
+          override src/components/entry-form.tsx
+          override src/components/home-view.tsx
+          override src/components/house-calendar.tsx
+          override src/components/house-view.tsx
+          override src/components/journal-view.tsx
+          override src/components/kind-page.tsx
+          override src/components/login-view.tsx
+          override src/components/messages-panel.tsx
+          override src/components/onboarding.tsx
+          override src/components/pdf-field.tsx
+          override src/components/photo-field.tsx
+          override src/lib/api.ts
+          override src/lib/auth/server.ts
+          override src/lib/history.ts
+          override src/lib/kinds.ts
+          override src/lib/media-access.ts
+          override src/lib/nav.ts
+          override src/lib/note-links.ts
+          override src/lib/pdf.ts
+          override src/lib/reminders.ts
+          override src/lib/sort.ts
+          override src/lib/types.ts
+          override src/routeTree.gen.ts
+          override src/routes/__root.tsx
+          override src/routes/login.tsx
+          override src/routes/reset-password.tsx
+          override src/styles.css
+
       - name: Verify exact archive digest
         shell: bash
         run: |
