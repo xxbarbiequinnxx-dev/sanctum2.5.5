@@ -13,6 +13,7 @@ export type Kind =
   | "journal"
   | "note"
   | "catalog"
+  | "wishlist"
   | "talk"
   | "roleplay"
   | "challenge"
@@ -328,6 +329,39 @@ export const KINDS: Record<Kind, KindConfig> = {
       { key: "body", label: "Notes", type: "textarea", placeholder: "Use, care, limits, favourites.", store: "column" },
       { key: "intensity", label: "Intensity", type: "intensity", store: "column" },
     ],
+  },
+  wishlist: {
+    kind: "wishlist",
+    path: "/wishlist",
+    title: "Wishlist",
+    kicker: "The wish",
+    blurb: "Things you want to add to the collection — toys, outfits, lingerie, accessories, restraints, furniture, and spaces.",
+    addLabel: "New wishlist item",
+    emptyTitle: "The wishlist is empty",
+    emptyBody: "Add something you would like to own, try, wear, or bring into the space.",
+    layout: "grid",
+    categories: [
+      { value: "toy", label: "Toys" },
+      { value: "outfit", label: "Outfits" },
+      { value: "lingerie", label: "Lingerie" },
+      { value: "accessory", label: "Accessories" },
+      { value: "restraint", label: "Restraints" },
+      { value: "furniture", label: "Furniture" },
+      { value: "room", label: "Spaces" },
+    ],
+    statuses: [
+      { value: "open", label: "Wanted" },
+      { value: "done", label: "Acquired" },
+      { value: "archived", label: "Removed" },
+    ],
+    fields: [
+      { key: "category", label: "Kind", type: "select", store: "column" },
+      { key: "brand", label: "Maker / brand", type: "text", placeholder: "Optional", store: "meta" },
+      { key: "url", label: "Link", type: "text", placeholder: "Optional product link", store: "meta" },
+      { key: "body", label: "Notes", type: "textarea", placeholder: "Why you want it, sizing, colour, or other details.", store: "column" },
+    ],
+    completeLabel: "Mark acquired",
+    reopenLabel: "Move back to wishlist",
   },
   talk: {
     kind: "talk",
