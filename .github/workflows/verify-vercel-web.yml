@@ -1,0 +1,29 @@
+name: Verify Sanctum web build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          VITE_AUTH_ENABLED: 'true'
+      - name: Check Vercel Build Output
+        run: |
+          test -f .vercel/output/config.json
+          test -f .vercel/output/functions/__server.func/index.mjs
