@@ -1,0 +1,86 @@
+name: Populate Sanctum 2.5.5
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/populate-sanctum255.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  populate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch structured Sanctum source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/xxbarbiequinnxx-dev/sanctum2.5.2.2.git /tmp/sanctum-source
+          test -s /tmp/sanctum-source/Sanctum-vercel-upload.zip
+          rm -rf /tmp/sanctum-unpacked
+          mkdir -p /tmp/sanctum-unpacked
+          unzip -q /tmp/sanctum-source/Sanctum-vercel-upload.zip -d /tmp/sanctum-unpacked
+          APP_ROOT="$(dirname "$(find /tmp/sanctum-unpacked -maxdepth 3 -type f -name package.json | head -n 1)")"
+          test -f "$APP_ROOT/package.json"
+          echo "APP_ROOT=$APP_ROOT" >> "$GITHUB_ENV"
+
+      - name: Verify against uploaded All-Sanctum-Files archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$APP_ROOT"
+
+          # The uploaded archive contains 257 files including .env.production.
+          # We intentionally do not publish .env.production to this public repo.
+          COUNT="$(find . -type f ! -path './.env.production' | wc -l | tr -d ' ')"
+          BYTES="$(find . -type f ! -path './.env.production' -printf '%s\n' | awk '{s+=$1} END {print s}')"
+          echo "non-env files=$COUNT bytes=$BYTES"
+          test "$COUNT" = "256"
+          test "$BYTES" = "4342207"
+
+          check() {
+            expected="$1"
+            file="$2"
+            actual="$(sha256sum "$file" | awk '{print $1}')"
+            echo "$file $actual"
+            test "$actual" = "$expected"
+          }
+
+          check 6d87eac3c75d681e74cfd3ce9a1844eb039496c242e2d5733dee58de1f8c9df5 package.json
+          check 5ca9d86a3c6f91b580d434297f283b70850bb740e7b813b6a63ab0ca9fb24615 package-lock.json
+          check a2ea499279dce89eb2c701023dc5e1116d237057636772a3fb824d053ab3d745 vercel.json
+          check 64cc5a8df877256fabc257158386a11778f6cbebf85b1b72d461df4d24ef9675 DEPLOY-TO-VERCEL.md
+          check fbb73f1cc91cba693f1c9400b35ac4a851e055278e6b027313097675e9d846c7 src/lib/db.ts
+          check 796a421d36c0f826f8793c7f15f0b4fdcd5719cf1e3fc61614ee26220d7c5a46 src/lib/auth/server.ts
+          check b6321163be789e2f4cdbf5a2655cbc298c7378c3f1caacb2660c624e76a9fc82 src/components/login-view.tsx
+          check a85e03e6be73b50d776c9e32350917b162aab5f08c0ad46a58d3d15ad2fed4b2 src/lib/pdf.ts
+          check ca05523c267fbad0f7675870bb58135d3b55daa6913f07611b5847df024ee884 src/components/pdf-field.tsx
+          check 37960fa3579178f2250ec31c1343996f6396c1dc5b5b18f785db393f948ea039 public/vesper.jpg
+          check 9c79b90a4e548ce2b3d48fe0aec7eba1d3c6a79cdacd39deec54768d944afe27 .github/workflows/verify-vercel-web.yml
+
+      - name: Populate repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a "$APP_ROOT"/. .
+          rm -f .env.production
+
+          # Never publish deployment secrets or Android signing material.
+          find . -type f \( -name '*.keystore' -o -name '*.jks' \) -delete
+          rm -f .env .env.local .env.production .env.development .env.preview
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git status --short
+          git commit -m "Populate Sanctum 2.5.5 from verified source"
+          git push origin HEAD:main
