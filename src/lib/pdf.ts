@@ -1,9 +1,8 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { GlobalWorkerOptions, getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
-import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import type { PdfAttachment } from "@/lib/types";
 
-GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+// pdfjs-dist relies on browser-only DOMMatrix at module initialization.
+// Never import it at module scope: this file is also loaded during SSR.
 
 export const PDF_META_KEY = "_pdfs";
 export const MAX_PDFS = 3;
@@ -106,6 +105,15 @@ function bytesToPdfDataUrl(bytes: Uint8Array) {
 }
 
 export async function extractPdfText(item: PdfAttachment) {
+  if (typeof window === "undefined") {
+    throw new Error("PDF text extraction is available only in the browser.");
+  }
+  // Load PDF.js and its worker on user interaction, never while Vercel imports SSR routes.
+  const [{ GlobalWorkerOptions, getDocument }, { default: pdfWorkerUrl }] = await Promise.all([
+    import("pdfjs-dist/legacy/build/pdf.mjs"),
+    import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url"),
+  ]);
+  GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
   const bytes = dataUrlBytes(item.data);
   const task = getDocument({ data: bytes });
   const document = await task.promise;
