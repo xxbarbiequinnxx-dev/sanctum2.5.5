@@ -97,7 +97,8 @@ type AndroidGoogleResult = {
 
 async function getAndroidGoogleIdToken(): Promise<string> {
   const bridge = androidBridge();
-  if (!bridge?.googleSignIn) throw new Error("Native Google sign-in is unavailable.");
+  const nativeGoogleSignIn = bridge?.googleSignIn;
+  if (!bridge || !nativeGoogleSignIn) throw new Error("Native Google sign-in is unavailable.");
 
   const configResponse = await fetch("/api/mobile-auth-config", {
     method: "GET",
@@ -130,7 +131,7 @@ async function getAndroidGoogleIdToken(): Promise<string> {
 
     window.addEventListener("sanctum-native-google-signin", onResult as EventListener);
     try {
-      bridge.googleSignIn(clientId);
+      nativeGoogleSignIn.call(bridge, clientId);
     } catch (error) {
       settled = true;
       window.clearTimeout(timeout);
