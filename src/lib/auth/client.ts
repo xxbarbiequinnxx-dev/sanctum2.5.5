@@ -79,6 +79,67 @@ function inLivePreview(): boolean {
   );
 }
 
+
+type AndroidBridge = {
+  googleSignIn?: (serverClientId: string) => void;
+};
+
+function androidBridge(): AndroidBridge | null {
+  if (typeof window === "undefined") return null;
+  const candidate = (window as unknown as { SanctumAndroid?: AndroidBridge }).SanctumAndroid;
+  return candidate && typeof candidate.googleSignIn === "function" ? candidate : null;
+}
+
+type AndroidGoogleResult = {
+  idToken?: string;
+  error?: string;
+};
+
+async function getAndroidGoogleIdToken(): Promise<string> {
+  const bridge = androidBridge();
+  if (!bridge?.googleSignIn) throw new Error("Native Google sign-in is unavailable.");
+
+  const configResponse = await fetch("/api/mobile-auth-config", {
+    method: "GET",
+    credentials: "same-origin",
+    cache: "no-store",
+  });
+  if (!configResponse.ok) throw new Error("Could not load Google sign-in configuration.");
+  const config = (await configResponse.json()) as { googleClientId?: string | null };
+  const clientId = config.googleClientId?.trim();
+  if (!clientId) throw new Error("Google sign-in is not configured for Sanctum.");
+
+  return new Promise<string>((resolve, reject) => {
+    let settled = false;
+    const timeout = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener("sanctum-native-google-signin", onResult as EventListener);
+      reject(new Error("Google sign-in timed out."));
+    }, 120_000);
+
+    const onResult = (event: Event) => {
+      if (settled) return;
+      const detail = (event as CustomEvent<AndroidGoogleResult>).detail ?? {};
+      settled = true;
+      window.clearTimeout(timeout);
+      window.removeEventListener("sanctum-native-google-signin", onResult as EventListener);
+      if (detail.idToken) resolve(detail.idToken);
+      else reject(new Error(detail.error || "Google sign-in was cancelled or failed."));
+    };
+
+    window.addEventListener("sanctum-native-google-signin", onResult as EventListener);
+    try {
+      bridge.googleSignIn(clientId);
+    } catch (error) {
+      settled = true;
+      window.clearTimeout(timeout);
+      window.removeEventListener("sanctum-native-google-signin", onResult as EventListener);
+      reject(error instanceof Error ? error : new Error("Could not start Google sign-in."));
+    }
+  });
+}
+
 /** Message the popup posts back to the opener once sign-in completes. */
 type PopupMessage = { source: "grok-auth-popup"; token: string | null; error?: string };
 
@@ -144,6 +205,27 @@ export async function signIn(
   }
 
   if (providerId === "google") {
+    // Android WebView cannot run Google's redirect-based OAuth flow. Google
+    // Sign-In is intentionally completed by the native Android Credential
+    // Manager and the resulting ID token is verified by Better Auth here.
+    if (androidBridge()) {
+      const idToken = await getAndroidGoogleIdToken();
+      const { error } = await authClient.signIn.social({
+        provider: "google",
+        idToken: { token: idToken },
+        callbackURL,
+        errorCallbackURL,
+      });
+      if (error) throw new Error(error.message ?? "Google sign-in failed");
+      try {
+        await authClient.getSession();
+      } catch {
+        /* the normal session store will refresh on navigation */
+      }
+      if (typeof window !== "undefined") window.location.href = callbackURL;
+      return;
+    }
+
     const { data, error } = await authClient.signIn.social({
       provider: "google",
       callbackURL,
