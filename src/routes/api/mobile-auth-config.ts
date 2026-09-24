@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/api/mobile-auth-config" as any)({
+export const Route = createFileRoute("/api/mobile-auth-config")({
   server: {
     handlers: {
       GET: () => {
