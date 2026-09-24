@@ -38,8 +38,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
-      - run: npm run typecheck
       - run: npm run build
+      - run: npm run typecheck
         env:
           VITE_AUTH_ENABLED: 'true'
       - name: Check Vercel Build Output
