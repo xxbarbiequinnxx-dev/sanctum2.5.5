@@ -13,6 +13,25 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sanctum
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sanctum"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/sanctum
+      BETTER_AUTH_URL: http://127.0.0.1:8081
+      BETTER_AUTH_SECRET: github-ci-only-secret-do-not-use-in-production
+      VITE_AUTH_ENABLED: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,3 +46,19 @@ jobs:
         run: |
           test -f .vercel/output/config.json
           test -f .vercel/output/functions/__server.func/index.mjs
+      - name: Smoke-test actual production server without browser DOM APIs
+        run: |
+          set -euo pipefail
+          npm run preview:restart
+          sleep 2
+          if ! curl --fail --silent --show-error --max-time 20 http://127.0.0.1:8081/ > /tmp/sanctum-root.html; then
+            cat .grok/preview.log || true
+            exit 1
+          fi
+          if ! curl --fail --silent --show-error --max-time 20 http://127.0.0.1:8081/login > /tmp/sanctum-login.html; then
+            cat .grok/preview.log || true
+            exit 1
+          fi
+          grep -qi "Sanctum" /tmp/sanctum-root.html
+          grep -qi "Sanctum" /tmp/sanctum-login.html
+          echo "SSR route smoke tests passed without DOMMatrix."
